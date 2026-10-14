@@ -119,6 +119,10 @@ nav{display:flex;justify-content:space-between;align-items:center;gap:1rem;paddi
 .miniaturas{display:flex;gap:.4rem;padding:.5rem;overflow-x:auto}
 .miniaturas img{width:56px;height:56px;object-fit:cover;border-radius:8px;border:2px solid transparent;cursor:pointer;opacity:.7}
 .miniaturas img.on{border-color:var(--azul-md);opacity:1}
+.m-galeria .video{aspect-ratio:1/1;width:100%;background:#000;display:block;border:0}
+.mini-v{position:relative;flex:none}
+.mini-v::after{content:"▶";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.1rem;text-shadow:0 1px 4px #000;pointer-events:none}
+.tag-video{position:absolute;right:.6rem;bottom:.6rem;background:rgba(2,12,27,.85);color:#fff;font-size:.72rem;font-weight:800;padding:.3rem .6rem;border-radius:100px;border:1px solid var(--azul-md)}
 .m-info{padding:1.6rem 1.5rem;display:flex;flex-direction:column;gap:.8rem}
 .m-info h2{font-size:1.45rem;font-weight:900;line-height:1.2}
 .m-info .desc{color:var(--celeste-lt);font-size:.95rem;line-height:1.55;white-space:pre-line}
@@ -298,6 +302,15 @@ function fotoURL(f){
   if (m && /google\./.test(f)) return `https://lh3.googleusercontent.com/d/${m[1]}=w1000`;
   return f;
 }
+function videoInfo(v){
+  v = String(v).trim(); if (!v) return null;
+  let m = v.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|shorts\/|embed\/))([\w-]{6,})/);
+  if (m) return {tipo:"yt", embed:`https://www.youtube.com/embed/${m[1]}?rel=0&playsinline=1`, thumb:`https://i.ytimg.com/vi/${m[1]}/hqdefault.jpg`};
+  m = v.match(/\/d\/([\w-]{20,})/) || v.match(/[?&]id=([\w-]{20,})/);
+  if (m && /google\./.test(v)) return {tipo:"drive", embed:`https://drive.google.com/file/d/${m[1]}/preview`, thumb:`https://lh3.googleusercontent.com/d/${m[1]}=w1000`};
+  if (/\.(mp4|webm|mov)(\?|$)/i.test(v)) return {tipo:"mp4", src:v, thumb:null};
+  return null;
+}
 function toast(t){ const el=$("#toast"); el.textContent=t; el.classList.add("on"); clearTimeout(toast._t); toast._t=setTimeout(()=>el.classList.remove("on"),2000); }
 const store = { get(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } },
                 set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} } };
@@ -343,7 +356,12 @@ function prepararProducto(p, i){
   const promoOk = promo && precio && promo < precio && (!hasta || hoy0() <= hasta);
   const stock = num(p["Stock"]);
   const estado = norm(p["Estado"]) || "visible";
-  const fotos = String(p["Fotos"]||"").split(/[,\n]/).map(fotoURL).filter(Boolean);
+  const crudo = String(p["Fotos"]||"").split(/[,\n]/).map(s=>s.trim()).filter(Boolean);
+  const esYT = s => /youtu\.?be/.test(s);
+  const imgs = crudo.filter(s=>!esYT(s)).map(fotoURL).filter(Boolean);
+  const videos = [...String(p["Video"]||p["Videos"]||"").split(/[,\n]/), ...crudo.filter(esYT)].map(videoInfo).filter(Boolean);
+  const fotos = imgs.length ? imgs : videos.map(v=>v.thumb).filter(Boolean);
+  const medios = [...videos.map(v=>({...v, video:true})), ...imgs.map(src=>({src, thumb:src}))];
   const vars = String(p["Variantes"]||"").split(/\s*[-,\/|]\s*/).map(s=>s.trim()).filter(s=>s && norm(s)!=="unica" && norm(s)!=="única");
   return {
     id: norm(p["Nombre"]).replace(/[^a-z0-9]+/g,"-"),
@@ -352,7 +370,7 @@ function prepararProducto(p, i){
     cat: String(p["Categoría"]||p["Categoria"]||"Otros").trim() || "Otros",
     precio, precioFinal: promoOk ? promo : precio, enOferta: !!promoOk, hasta: promoOk ? hasta : null,
     pct: promoOk ? Math.round((1 - promo/precio)*100) : 0,
-    fotos, vars, stock,
+    fotos, medios, videos, vars, stock,
     estado: estado.startsWith("oculto") ? "oculto" : estado.startsWith("pre") ? "preventa" : estado.startsWith("prox") ? "proximamente" : "visible",
     dest: si(p["Destacado"]), orden: num(p["Orden"]) ?? 999,
   };
@@ -436,7 +454,7 @@ function pintarGrilla(){
   const lista = PRODUCTOS.filter(p => (catActiva==="Todo" || p.cat===catActiva) && (!q || norm(p.nombre+" "+p.desc+" "+p.cat).includes(q)));
   $("#grilla").innerHTML = lista.length ? lista.map(p => `
     <article class="card" data-id="${p.id}">
-      <div class="card-img">${imgOPh(p.fotos[0], p.nombre)}${htmlTags(p)}</div>
+      <div class="card-img">${imgOPh(p.fotos[0], p.nombre)}${htmlTags(p)}${p.videos.length?`<span class="tag-video">▶ Video</span>`:""}</div>
       <div class="card-body">
         <span class="card-cat">${esc(p.cat)}</span>
         <h3 class="card-nom">${esc(p.nombre)}</h3>
@@ -464,12 +482,18 @@ let mSel = {var:null, cant:1, foto:0};
 function abrirModal(p){
   mSel = {var: p.vars.length===1 ? p.vars[0] : null, cant:1, foto:0};
   const pintar = () => {
-    const f = p.fotos[mSel.foto];
+    const f = p.medios[mSel.foto];
+    const principal = !f ? `<div class="ph"><img src="img/logo.png" alt=""></div>`
+      : f.video ? (f.tipo==="mp4" ? `<video class="video" src="${esc(f.src)}" controls playsinline autoplay muted loop></video>`
+                 : `<iframe class="video" src="${esc(f.embed)}" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>`)
+      : `<img class="principal" src="${esc(f.src)}" alt="${esc(p.nombre)}">`;
     $("#modal").innerHTML = `
       <div class="m-galeria">
         <button class="cerrar" data-cerrar aria-label="Cerrar">✕</button>
-        ${f ? `<img class="principal" src="${esc(f)}" alt="${esc(p.nombre)}">` : `<div class="ph"><img src="img/logo.png" alt=""></div>`}
-        ${p.fotos.length>1 ? `<div class="miniaturas">${p.fotos.map((x,i)=>`<img src="${esc(x)}" data-foto="${i}" class="${i===mSel.foto?"on":""}" alt="">`).join("")}</div>` : ""}
+        ${principal}
+        ${p.medios.length>1 ? `<div class="miniaturas">${p.medios.map((x,i)=>{
+            const im = `<img src="${esc(x.thumb||"img/logo.png")}" data-foto="${i}" class="${i===mSel.foto?"on":""}" alt="">`;
+            return x.video ? `<span class="mini-v">${im}</span>` : im; }).join("")}</div>` : ""}
       </div>
       <div class="m-info">
         <span class="card-cat">${esc(p.cat)}</span>
