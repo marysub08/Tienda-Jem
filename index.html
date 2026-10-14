@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tienda JEM · Julio Espósito MTB</title>
+<meta name="description" content="Tienda oficial JEM · Julio Espósito MTB. Indumentaria y equipo para ciclismo. Envío gratis en Gran Mendoza.">
+<link rel="icon" type="image/png" href="img/logo.png">
+<style>
+/* ════════════════════════════════════════════════
+   CONFIGURACIÓN RÁPIDA → ver también el bloque CONFIG en el <script>
+   Colores tomados de julioesposito.com
+════════════════════════════════════════════════ */
+:root{
+  --azul-dk:#0369a1; --azul:#0ea5e9; --azul-md:#38bdf8;
+  --celeste:#7dd3fc; --celeste-lt:#bae6fd;
+  --fondo:#020c1b; --fondo-2:#041426;
+  --card-bg:rgba(14,165,233,.07); --card-brd:rgba(56,189,248,.2);
+  --texto:#f0f9ff; --texto-2:#7dd3fc; --texto-3:#38bdf8;
+  --glass:rgba(2,20,50,.55);
+  --oferta:#fbbf24; --wa:#25d366; --rojo:#f87171;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;color:var(--texto);background:var(--fondo);min-height:100vh;
+  background-image:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(14,165,233,.18),transparent 70%);background-attachment:fixed}
+img{max-width:100%;display:block}
+button{font-family:inherit;cursor:pointer}
+a{color:inherit}
+
+/* ── Franja de avisos ── */
+.avisos{background:linear-gradient(90deg,var(--azul-dk),var(--azul));color:#fff;font-size:.86rem;font-weight:700;text-align:center;
+  padding:.55rem 1rem;min-height:2.2rem;display:none;align-items:center;justify-content:center;gap:.5rem}
+.avisos.on{display:flex}
+.avisos .txt{transition:opacity .4s}
+.avisos.dni{background:linear-gradient(90deg,#b45309,#f59e0b)}
+
+/* ── Nav (igual que la página principal) ── */
+nav{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:.9rem 2rem;border-bottom:1px solid rgba(56,189,248,.12);
+  position:sticky;top:0;z-index:200;background:rgba(2,12,27,.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.logo-pill{height:34px;padding:0 .9rem;background:linear-gradient(135deg,var(--azul-dk),var(--azul));border-radius:100px;
+  display:flex;align-items:center;gap:.45rem;font-size:.72rem;font-weight:900;letter-spacing:.3px;color:#fff;text-decoration:none;white-space:nowrap}
+.logo-pill svg{width:16px;height:16px}
+.nav-der{display:flex;align-items:center;gap:1.1rem}
+.nav-back{font-size:.84rem;color:var(--celeste);text-decoration:none;white-space:nowrap}
+.nav-back:hover{color:#fff}
+.nav-back .corto{display:none}
+.btn-carrito{position:relative;display:flex;align-items:center;gap:.45rem;padding:.5rem 1rem;border-radius:8px;border:none;font-weight:700;font-size:.87rem;
+  background:linear-gradient(135deg,var(--azul),var(--azul-dk));color:#fff}
+.btn-carrito svg{width:18px;height:18px}
+.badge-n{position:absolute;top:-7px;right:-7px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:var(--oferta);color:#1a1300;
+  font-size:.72rem;font-weight:900;display:none;align-items:center;justify-content:center}
+.badge-n.on{display:flex}
+
+/* ── Hero ── */
+.hero{text-align:center;padding:2.6rem 1.25rem 1.6rem}
+.hero img{width:min(320px,70vw);margin:0 auto .4rem;mix-blend-mode:lighten;filter:contrast(1.4)}
+.hero h1{font-size:clamp(1.7rem,4.5vw,2.6rem);font-weight:900;letter-spacing:-.5px}
+.hero h1 span{background:linear-gradient(135deg,var(--celeste),var(--azul));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{color:var(--texto-2);margin-top:.5rem;font-size:1rem}
+.chips-info{display:flex;flex-wrap:wrap;justify-content:center;gap:.5rem;margin-top:1.1rem}
+.chip-info{font-size:.8rem;padding:.35rem .8rem;border-radius:100px;background:var(--card-bg);border:1px solid var(--card-brd);color:var(--celeste-lt)}
+
+/* ── Filtros ── */
+.wrap{max-width:1180px;margin:0 auto;padding:0 1.25rem 4rem}
+.filtros{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;justify-content:space-between;margin:1rem 0 1.4rem}
+.cats{display:flex;flex-wrap:wrap;gap:.45rem}
+.cat{padding:.45rem 1rem;border-radius:100px;border:1px solid var(--card-brd);background:transparent;color:var(--celeste);font-size:.86rem;font-weight:600}
+.cat.on,.cat:hover{background:linear-gradient(135deg,var(--azul-dk),var(--azul));color:#fff;border-color:transparent}
+.buscar{flex:1;min-width:180px;max-width:280px;background:var(--card-bg);border:1px solid var(--card-brd);border-radius:10px;padding:.55rem .9rem;color:var(--texto);font-size:.9rem;outline:none}
+.buscar:focus{border-color:var(--azul-md)}
+.buscar::placeholder{color:rgba(125,211,252,.55)}
+
+/* ── Grilla de productos ── */
+.grilla{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1.2rem}
+.card{background:var(--card-bg);border:1px solid var(--card-brd);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;
+  transition:transform .2s,border-color .2s,box-shadow .2s;cursor:pointer}
+.card:hover{transform:translateY(-3px);border-color:var(--azul-md);box-shadow:0 10px 30px rgba(14,165,233,.15)}
+.card-img{position:relative;aspect-ratio:1/1;background:var(--fondo-2);overflow:hidden}
+.card-img img{width:100%;height:100%;object-fit:cover}
+.card-img .ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+.card-img .ph img{width:62%;height:auto;object-fit:contain;opacity:.35;mix-blend-mode:lighten}
+.tags{position:absolute;top:.6rem;left:.6rem;display:flex;flex-direction:column;gap:.3rem;align-items:flex-start}
+.tag{font-size:.68rem;font-weight:900;letter-spacing:.5px;padding:.25rem .55rem;border-radius:6px;text-transform:uppercase}
+.tag.dest{background:var(--oferta);color:#1a1300}
+.tag.pre{background:var(--azul);color:#fff}
+.tag.prox{background:rgba(2,12,27,.85);color:var(--celeste);border:1px solid var(--azul-md)}
+.tag.agot{background:#334155;color:#cbd5e1}
+.tag.off{background:var(--rojo);color:#fff}
+.card-body{padding:1rem 1rem 1.1rem;display:flex;flex-direction:column;gap:.35rem;flex:1}
+.card-cat{font-size:.72rem;color:var(--texto-3);text-transform:uppercase;letter-spacing:.8px;font-weight:700}
+.card-nom{font-size:1.02rem;font-weight:800;line-height:1.25}
+.precios{display:flex;align-items:baseline;gap:.5rem;flex-wrap:wrap;margin-top:auto;padding-top:.4rem}
+.p-act{font-size:1.25rem;font-weight:900}
+.p-ant{font-size:.88rem;color:rgba(186,230,253,.5);text-decoration:line-through}
+.p-conf{font-size:.92rem;color:var(--celeste);font-weight:700}
+.p-hasta{font-size:.72rem;color:var(--oferta);width:100%}
+.btn{border:none;border-radius:10px;padding:.65rem 1rem;font-weight:800;font-size:.9rem;display:inline-flex;align-items:center;justify-content:center;gap:.4rem;transition:opacity .2s}
+.btn:hover{opacity:.88}
+.btn-pri{background:linear-gradient(135deg,var(--azul),var(--azul-dk));color:#fff}
+.btn-wa{background:var(--wa);color:#04210f}
+.btn-sec{background:transparent;border:1px solid var(--card-brd);color:var(--celeste)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.card .btn{margin-top:.6rem;width:100%}
+.vacio,.cargando{text-align:center;color:var(--texto-2);padding:3rem 1rem;grid-column:1/-1}
+.spinner{width:34px;height:34px;border:3px solid rgba(56,189,248,.2);border-top-color:var(--azul-md);border-radius:50%;margin:0 auto 1rem;animation:gira 1s linear infinite}
+@keyframes gira{to{transform:rotate(360deg)}}
+
+/* ── Modal producto ── */
+.velo{position:fixed;inset:0;background:rgba(1,6,15,.75);backdrop-filter:blur(4px);z-index:300;display:none}
+.velo.on{display:block}
+.modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(860px,94vw);max-height:90vh;overflow:auto;background:var(--fondo-2);
+  border:1px solid var(--card-brd);border-radius:18px;z-index:310;display:none}
+.modal.on{display:grid;grid-template-columns:1.05fr 1fr}
+.m-galeria{background:var(--fondo);position:relative}
+.m-galeria .principal{aspect-ratio:1/1;width:100%;object-fit:cover}
+.m-galeria .ph{aspect-ratio:1/1;display:flex;align-items:center;justify-content:center}
+.m-galeria .ph img{width:60%;opacity:.35;mix-blend-mode:lighten}
+.miniaturas{display:flex;gap:.4rem;padding:.5rem;overflow-x:auto}
+.miniaturas img{width:56px;height:56px;object-fit:cover;border-radius:8px;border:2px solid transparent;cursor:pointer;opacity:.7}
+.miniaturas img.on{border-color:var(--azul-md);opacity:1}
+.m-info{padding:1.6rem 1.5rem;display:flex;flex-direction:column;gap:.8rem}
+.m-info h2{font-size:1.45rem;font-weight:900;line-height:1.2}
+.m-info .desc{color:var(--celeste-lt);font-size:.95rem;line-height:1.55;white-space:pre-line}
+.lbl{font-size:.78rem;font-weight:800;color:var(--texto-3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:.35rem}
+.variantes{display:flex;flex-wrap:wrap;gap:.4rem}
+.var{min-width:44px;padding:.45rem .8rem;border-radius:8px;border:1px solid var(--card-brd);background:transparent;color:var(--texto);font-weight:700;font-size:.88rem}
+.var.on{background:var(--azul);border-color:var(--azul);color:#fff}
+.cant{display:inline-flex;align-items:center;border:1px solid var(--card-brd);border-radius:10px;overflow:hidden}
+.cant button{width:38px;height:38px;background:transparent;border:none;color:var(--celeste);font-size:1.15rem;font-weight:800}
+.cant span{min-width:34px;text-align:center;font-weight:800}
+.cerrar{position:absolute;top:.7rem;right:.7rem;width:36px;height:36px;border-radius:50%;border:none;background:rgba(2,12,27,.8);color:#fff;font-size:1.1rem;z-index:5}
+.aviso-txt{font-size:.82rem;color:var(--oferta)}
+.err{font-size:.82rem;color:var(--rojo);min-height:1em}
+
+/* ── Carrito (panel lateral) ── */
+.panel{position:fixed;top:0;right:0;height:100%;width:min(430px,100vw);background:var(--fondo-2);border-left:1px solid var(--card-brd);z-index:320;
+  transform:translateX(105%);transition:transform .3s ease;display:flex;flex-direction:column}
+.panel.on{transform:none}
+.p-head{display:flex;justify-content:space-between;align-items:center;padding:1.1rem 1.25rem;border-bottom:1px solid var(--card-brd)}
+.p-head h3{font-size:1.15rem;font-weight:900}
+.p-head button{background:none;border:none;color:var(--celeste);font-size:1.3rem}
+.p-body{flex:1;overflow:auto;padding:1rem 1.25rem}
+.item{display:grid;grid-template-columns:58px 1fr auto;gap:.75rem;align-items:center;padding:.7rem 0;border-bottom:1px solid rgba(56,189,248,.1)}
+.item img,.item .mini-ph{width:58px;height:58px;border-radius:8px;object-fit:cover;background:var(--fondo)}
+.item .nom{font-weight:800;font-size:.9rem;line-height:1.25}
+.item .det{font-size:.78rem;color:var(--texto-2)}
+.item .pr{font-weight:800;font-size:.92rem;text-align:right}
+.item .cant button{width:28px;height:28px;font-size:.95rem}
+.item .cant span{min-width:24px;font-size:.85rem}
+.item .quitar{background:none;border:none;color:rgba(248,113,113,.8);font-size:.75rem;margin-top:.3rem}
+.form{margin-top:1.2rem;display:flex;flex-direction:column;gap:.85rem}
+.form input,.form textarea{width:100%;background:rgba(14,165,233,.07);border:1px solid rgba(56,189,248,.18);border-radius:10px;padding:.7rem .9rem;
+  font-size:.93rem;color:var(--texto);outline:none;font-family:inherit}
+.form input:focus,.form textarea:focus{border-color:var(--azul-md)}
+.opc{display:flex;gap:.6rem;align-items:flex-start;padding:.7rem .85rem;border:1px solid var(--card-brd);border-radius:10px;cursor:pointer;font-size:.88rem}
+.opc input{width:auto;margin-top:.2rem;accent-color:var(--azul)}
+.opc b{display:block}
+.opc small{color:var(--texto-2)}
+.dni-box{border:1px dashed var(--oferta);border-radius:12px;padding:.85rem;background:rgba(251,191,36,.06)}
+.dni-box .t{font-weight:800;color:var(--oferta);font-size:.9rem;margin-bottom:.45rem}
+.dni-box input{max-width:90px;text-align:center;font-size:1.1rem;font-weight:800}
+.dni-box small{display:block;color:var(--celeste-lt);font-size:.75rem;margin-top:.45rem;line-height:1.4}
+.p-foot{border-top:1px solid var(--card-brd);padding:1rem 1.25rem 1.25rem;display:flex;flex-direction:column;gap:.35rem}
+.fila{display:flex;justify-content:space-between;font-size:.92rem}
+.fila.desc{color:var(--oferta);font-weight:700}
+.fila.tot{font-size:1.2rem;font-weight:900;margin-top:.25rem}
+.p-foot .btn{margin-top:.6rem;width:100%;padding:.85rem}
+.p-foot .nota{font-size:.75rem;color:var(--texto-2);text-align:center}
+
+footer{text-align:center;padding:2rem 1rem;color:var(--texto-2);font-size:.85rem;border-top:1px solid rgba(56,189,248,.1)}
+footer a{color:var(--azul-md);text-decoration:none}
+.demo{position:fixed;bottom:.8rem;right:.8rem;font-size:.72rem;background:#334155;color:#e2e8f0;padding:.35rem .6rem;border-radius:6px;z-index:50;opacity:.85}
+.toast{position:fixed;bottom:1.2rem;left:50%;transform:translateX(-50%) translateY(200px);background:var(--azul);color:#fff;font-weight:800;
+  padding:.7rem 1.2rem;border-radius:10px;z-index:400;transition:transform .3s,visibility .3s;font-size:.9rem;visibility:hidden}
+.toast.on{transform:translateX(-50%) translateY(0);visibility:visible}
+
+@media (max-width:720px){
+  nav{padding:.75rem 1rem}
+  .nav-back .largo{display:none}
+  .nav-back .corto{display:inline}
+  .modal.on{grid-template-columns:1fr;top:auto;bottom:0;left:0;transform:none;width:100%;max-height:92vh;border-radius:18px 18px 0 0}
+  .grilla{grid-template-columns:repeat(2,1fr);gap:.75rem}
+  .card-body{padding:.75rem}
+  .card-nom{font-size:.92rem}
+  .p-act{font-size:1.08rem}
+  .buscar{max-width:none}
+}
+@media (max-width:360px){.grilla{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="avisos" id="avisos"><span class="txt" id="avisosTxt"></span></div>
+
+<nav>
+  <a class="logo-pill" href="https://julioesposito.com">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="17.5" r="3"/><circle cx="18.5" cy="17.5" r="3"/><path d="M5.5 17.5L8 10l3 3 3-4.5 2 2.5"/><path d="M15 6.5a1.5 1.5 0 1 0 3 0 1.5 1.5 0 0 0-3 0"/><path d="M11 13l-3 4.5"/></svg>
+    Julio Espósito MTB
+  </a>
+  <div class="nav-der">
+    <a class="nav-back" href="https://julioesposito.com">← <span class="largo">Volver a la página</span><span class="corto">Inicio</span></a>
+    <button class="btn-carrito" id="abrirCarrito" aria-label="Abrir carrito">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/></svg>
+      Carrito <span class="badge-n" id="nCarrito">0</span>
+    </button>
+  </div>
+</nav>
+
+<header class="hero">
+  <img src="img/logo.png" alt="JEM · Julio Espósito MTB">
+  <h1>Tienda <span>JEM</span></h1>
+  <p>Indumentaria y equipo oficial para rodar con nosotros</p>
+  <div class="chips-info">
+    <span class="chip-info">🚚 Entrega gratis en Gran Mendoza</span>
+    <span class="chip-info">📦 Envíos a todo el país</span>
+    <span class="chip-info">💬 Pedido directo por WhatsApp</span>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="filtros">
+    <div class="cats" id="cats"></div>
+    <input class="buscar" id="buscar" type="search" placeholder="Buscar producto…">
+  </div>
+  <div class="grilla" id="grilla">
+    <div class="cargando"><div class="spinner"></div>Cargando productos…</div>
+  </div>
+</main>
+
+<footer>
+  <p><a href="https://www.instagram.com/julioesposito_mtb" target="_blank" rel="noopener">@julioesposito_mtb</a> &nbsp;·&nbsp; <a href="https://julioesposito.com">← Inicio</a></p>
+  <p style="margin-top:.4rem;opacity:.7">Julio Espósito MTB · Mendoza, Argentina</p>
+</footer>
+
+<!-- Modal de producto -->
+<div class="velo" id="velo"></div>
+<div class="modal" id="modal" role="dialog" aria-modal="true"></div>
+
+<!-- Carrito -->
+<aside class="panel" id="panel" aria-label="Carrito">
+  <div class="p-head"><h3>Tu pedido</h3><button id="cerrarCarrito" aria-label="Cerrar">✕</button></div>
+  <div class="p-body" id="pBody"></div>
+  <div class="p-foot" id="pFoot"></div>
+</aside>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ════════════════════════════════════════════════
+   CONFIG — lo único que hay que tocar
+════════════════════════════════════════════════ */
+const CONFIG = {
+  // ID de la planilla de Google Sheets (lo que está entre /d/ y /edit en el link).
+  // Mientras esté vacío, la tienda muestra productos de ejemplo.
+  SHEET_ID: "",
+  WHATSAPP: "5492616814824",
+  PESTANA_PRODUCTOS: "Productos",
+  PESTANA_AVISOS: "Avisos",
+  PESTANA_DNI: "Promos DNI",
+};
+
+/* Datos de ejemplo (solo se usan si SHEET_ID está vacío o con ?demo en la URL) */
+const DEMO = {
+  productos: [
+    {Nombre:"Remera JEM 2026",Descripción:"Remera técnica del kit oficial JEM · Julio Espósito MTB.",Categoría:"Indumentaria",Precio:25000,"Precio promo":21000,"Promo hasta":null,Fotos:"fotos/remera.jpeg",Variantes:"S-M-L-XL-XXL",Stock:12,Estado:"Preventa",Destacado:"SÍ",Orden:1},
+    {Nombre:"Medias JEM 2026",Descripción:"Medias de ciclismo con logo JEM.",Categoría:"Indumentaria",Precio:8000,"Precio promo":null,Fotos:"",Variantes:"Única",Stock:null,Estado:"Preventa",Destacado:"",Orden:2},
+    {Nombre:"Rompevientos JEM 2026",Descripción:"Rompevientos liviano con logo JEM.",Categoría:"Indumentaria",Precio:null,Fotos:"",Variantes:"S-M-L-XL-XXL",Stock:null,Estado:"Próximamente",Destacado:"",Orden:3},
+    {Nombre:"Caramañola 750 ml",Descripción:"Producto de ejemplo para ver cómo queda un accesorio.",Categoría:"Accesorios",Precio:6500,Fotos:"",Variantes:"",Stock:0,Estado:"Visible",Destacado:"",Orden:4},
+  ],
+  avisos: [{Mensaje:"🚚 Envío GRATIS en Gran Mendoza · Envíos a todo el país",Activo:"SÍ"}],
+  dni: [{Activa:"SÍ",Fecha:null,"Día de la semana":"todos los días","Terminación DNI":"5","Descuento %":20,"Aplica a":"Todo"}],
+};
+
+/* ════════════════════════════════════════════════
+   Utilidades
+════════════════════════════════════════════════ */
+const $ = s => document.querySelector(s);
+const norm = s => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g,"").trim().toLowerCase();
+const si = v => ["si","sí","s","x","true","1","yes"].includes(norm(v));
+const num = v => { if (v===null||v===undefined||v==="") return null; if (typeof v==="number") return v;
+  const n = Number(String(v).replace(/[^\d,.-]/g,"").replace(/\./g,"").replace(",",".")); return isNaN(n)?null:n; };
+const plata = n => "$" + Math.round(n).toLocaleString("es-AR");
+const esc = s => String(s ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const hoy0 = () => { const d=new Date(); d.setHours(0,0,0,0); return d; };
+function aFecha(v){
+  if (!v) return null;
+  if (v instanceof Date) return v;
+  let m = String(v).match(/^Date\((\d+),(\d+),(\d+)/);           // formato de Google: Date(2026,9,14)
+  if (m) return new Date(+m[1], +m[2], +m[3]);
+  m = String(v).match(/^(\d{1,2})[\/\-.](\d{1,2})(?:[\/\-.](\d{2,4}))?/); // 14/10 o 14/10/2026
+  if (m) { let y = m[3] ? +m[3] : new Date().getFullYear(); if (y<100) y+=2000; return new Date(y, +m[2]-1, +m[1]); }
+  return null;
+}
+function fotoURL(f){
+  f = String(f).trim(); if (!f) return null;
+  const m = f.match(/\/d\/([\w-]{20,})/) || f.match(/[?&]id=([\w-]{20,})/);
+  if (m && /google\./.test(f)) return `https://lh3.googleusercontent.com/d/${m[1]}=w1000`;
+  return f;
+}
+function toast(t){ const el=$("#toast"); el.textContent=t; el.classList.add("on"); clearTimeout(toast._t); toast._t=setTimeout(()=>el.classList.remove("on"),2000); }
+const store = { get(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } },
+                set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} } };
+
+/* ════════════════════════════════════════════════
+   Lectura de la planilla (Google Sheets, sin servidor)
+════════════════════════════════════════════════ */
+let _cb = 0;
+function leerPestana(nombre){
+  return new Promise((ok, mal) => {
+    const fn = "__jem" + (++_cb);
+    const s = document.createElement("script");
+    const t = setTimeout(()=>{ limpiar(); mal(new Error("timeout")); }, 12000);
+    function limpiar(){ clearTimeout(t); delete window[fn]; s.remove(); }
+    window[fn] = resp => {
+      limpiar();
+      if (!resp || resp.status==="error") return mal(new Error("sheet"));
+      const cols = resp.table.cols.map(c => (c.label||"").trim());
+      const filas = resp.table.rows.map(r => {
+        const o = {};
+        cols.forEach((c,i) => { const cel = r.c[i]; if (!c) return;
+          o[c] = cel ? (cel.v !== null && cel.v !== undefined ? cel.v : (cel.f ?? null)) : null; });
+        return o;
+      });
+      ok(filas);
+    };
+    s.onerror = () => { limpiar(); mal(new Error("red")); };
+    s.src = `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?headers=1&sheet=${encodeURIComponent(nombre)}&tqx=responseHandler:${fn}&t=${Date.now()}`;
+    document.head.appendChild(s);
+  });
+}
+
+/* ════════════════════════════════════════════════
+   Estado
+════════════════════════════════════════════════ */
+let PRODUCTOS = [], PROMOS_DNI_HOY = [], catActiva = "Todo";
+let carrito = store.get("jem_carrito", []);   // [{id, var, cant}]
+const modoDemo = !CONFIG.SHEET_ID || /[?&]demo/.test(location.search);
+
+function prepararProducto(p, i){
+  const precio = num(p["Precio"]), promo = num(p["Precio promo"]);
+  const hasta = aFecha(p["Promo hasta"]);
+  const promoOk = promo && precio && promo < precio && (!hasta || hoy0() <= hasta);
+  const stock = num(p["Stock"]);
+  const estado = norm(p["Estado"]) || "visible";
+  const fotos = String(p["Fotos"]||"").split(/[,\n]/).map(fotoURL).filter(Boolean);
+  const vars = String(p["Variantes"]||"").split(/\s*[-,\/|]\s*/).map(s=>s.trim()).filter(s=>s && norm(s)!=="unica" && norm(s)!=="única");
+  return {
+    id: norm(p["Nombre"]).replace(/[^a-z0-9]+/g,"-"),
+    nombre: String(p["Nombre"]||"").trim(),
+    desc: String(p["Descripción"]||p["Descripcion"]||"").trim(),
+    cat: String(p["Categoría"]||p["Categoria"]||"Otros").trim() || "Otros",
+    precio, precioFinal: promoOk ? promo : precio, enOferta: !!promoOk, hasta: promoOk ? hasta : null,
+    pct: promoOk ? Math.round((1 - promo/precio)*100) : 0,
+    fotos, vars, stock,
+    estado: estado.startsWith("oculto") ? "oculto" : estado.startsWith("pre") ? "preventa" : estado.startsWith("prox") ? "proximamente" : "visible",
+    dest: si(p["Destacado"]), orden: num(p["Orden"]) ?? 999,
+  };
+}
+const agotado = p => p.stock !== null && p.stock <= 0 && p.estado !== "preventa";
+const vendible = p => p.estado !== "proximamente" && !agotado(p) && p.precioFinal;
+
+function promosDeHoy(filas){
+  const h = hoy0();
+  const dias = ["domingo","lunes","martes","miercoles","jueves","viernes","sabado"];
+  const diaHoy = dias[h.getDay()];
+  return filas.filter(r => si(r["Activa"])).filter(r => {
+    const f = aFecha(r["Fecha"]);
+    const d = norm(r["Día de la semana"] ?? r["Dia de la semana"]);
+    if (f && f.getTime() === h.getTime()) return true;
+    if (d && d.split(/\s*(?:,|;|\sy\s)\s*/).some(x => x.trim() === diaHoy)) return true;
+    if (d.includes("todos")) return true;
+    return false;
+  }).map(r => ({
+    digitos: String(r["Terminación DNI"] ?? r["Terminacion DNI"] ?? "").match(/\d/g) || [],
+    pct: num(r["Descuento %"]) || 0,
+    aplica: String(r["Aplica a"] || "Todo").split(",").map(norm).filter(Boolean),
+  })).filter(p => p.digitos.length && p.pct > 0);
+}
+const aplicaA = (promo, prod) => !promo.aplica.length || promo.aplica.includes("todo") || promo.aplica.includes(norm(prod.cat));
+
+/* ════════════════════════════════════════════════
+   Avisos
+════════════════════════════════════════════════ */
+function mostrarAvisos(avisos){
+  const msgs = [];
+  PROMOS_DNI_HOY.forEach(p => {
+    const dig = p.digitos.join(", ");
+    const donde = p.aplica.includes("todo") || !p.aplica.length ? "" : ` en ${p.aplica.map(a=>a[0].toUpperCase()+a.slice(1)).join(", ")}`;
+    msgs.push({t:`🎯 Hoy DNI terminados en ${dig} → ${p.pct}% OFF${donde}`, dni:true});
+  });
+  avisos.filter(a => si(a["Activo"]) && String(a["Mensaje"]||"").trim()).forEach(a => msgs.push({t:String(a["Mensaje"]).trim()}));
+  if (!msgs.length) return;
+  const bar = $("#avisos"), txt = $("#avisosTxt"); let i = 0;
+  const pinta = () => { const m = msgs[i % msgs.length]; txt.textContent = m.t; bar.classList.toggle("dni", !!m.dni); };
+  bar.classList.add("on"); pinta();
+  if (msgs.length > 1) setInterval(() => { txt.style.opacity = 0; setTimeout(()=>{ i++; pinta(); txt.style.opacity = 1; }, 400); }, 4500);
+}
+
+/* ════════════════════════════════════════════════
+   Catálogo
+════════════════════════════════════════════════ */
+function htmlPrecio(p){
+  if (!p.precioFinal) return `<div class="precios"><span class="p-conf">Precio a confirmar</span></div>`;
+  let h = `<div class="precios"><span class="p-act">${plata(p.precioFinal)}</span>`;
+  if (p.enOferta) h += `<span class="p-ant">${plata(p.precio)}</span>`;
+  if (p.hasta) h += `<span class="p-hasta">Oferta hasta el ${p.hasta.toLocaleDateString("es-AR",{day:"numeric",month:"long"})}</span>`;
+  return h + `</div>`;
+}
+function htmlTags(p){
+  let t = "";
+  if (p.dest) t += `<span class="tag dest">★ Destacado</span>`;
+  if (p.enOferta) t += `<span class="tag off">-${p.pct}%</span>`;
+  if (p.estado === "preventa") t += `<span class="tag pre">Preventa</span>`;
+  if (p.estado === "proximamente") t += `<span class="tag prox">Próximamente</span>`;
+  if (agotado(p)) t += `<span class="tag agot">Agotado</span>`;
+  return `<div class="tags">${t}</div>`;
+}
+const imgOPh = (src, alt) => src
+  ? `<img src="${esc(src)}" alt="${esc(alt)}" loading="lazy" onerror="this.outerHTML='<div class=ph><img src=img/logo.png alt=></div>'">`
+  : `<div class="ph"><img src="img/logo.png" alt=""></div>`;
+
+function textoBoton(p){
+  if (p.estado === "proximamente") return `<button class="btn btn-sec" data-accion="avisar">Avisame cuando llegue</button>`;
+  if (agotado(p)) return `<button class="btn btn-sec" data-accion="consultar">Consultar reposición</button>`;
+  if (!p.precioFinal) return `<button class="btn btn-wa" data-accion="consultar">Consultar precio</button>`;
+  return `<button class="btn btn-pri" data-accion="agregar">${p.estado==="preventa"?"Reservar":"Agregar al carrito"}</button>`;
+}
+
+function pintarCats(){
+  const cats = ["Todo", ...new Set(PRODUCTOS.map(p => p.cat))];
+  $("#cats").innerHTML = cats.length > 2 ? cats.map(c => `<button class="cat ${c===catActiva?"on":""}" data-cat="${esc(c)}">${esc(c)}</button>`).join("") : "";
+}
+function pintarGrilla(){
+  const q = norm($("#buscar").value);
+  const lista = PRODUCTOS.filter(p => (catActiva==="Todo" || p.cat===catActiva) && (!q || norm(p.nombre+" "+p.desc+" "+p.cat).includes(q)));
+  $("#grilla").innerHTML = lista.length ? lista.map(p => `
+    <article class="card" data-id="${p.id}">
+      <div class="card-img">${imgOPh(p.fotos[0], p.nombre)}${htmlTags(p)}</div>
+      <div class="card-body">
+        <span class="card-cat">${esc(p.cat)}</span>
+        <h3 class="card-nom">${esc(p.nombre)}</h3>
+        ${htmlPrecio(p)}
+        ${textoBoton(p)}
+      </div>
+    </article>`).join("") : `<div class="vacio">No encontramos productos${q?" con esa búsqueda":""}. 🚵</div>`;
+}
+
+/* ════════════════════════════════════════════════
+   WhatsApp
+════════════════════════════════════════════════ */
+const abrirWA = txt => window.open(`https://wa.me/${CONFIG.WHATSAPP}?text=${encodeURIComponent(txt)}`, "_blank", "noopener");
+function consultar(p, tipo){
+  const t = tipo === "avisar"
+    ? `¡Hola Julio! Quiero que me avises cuando llegue: *${p.nombre}* 🙌`
+    : `¡Hola Julio! Quería consultar por: *${p.nombre}*`;
+  abrirWA(t);
+}
+
+/* ════════════════════════════════════════════════
+   Modal de producto
+════════════════════════════════════════════════ */
+let mSel = {var:null, cant:1, foto:0};
+function abrirModal(p){
+  mSel = {var: p.vars.length===1 ? p.vars[0] : null, cant:1, foto:0};
+  const pintar = () => {
+    const f = p.fotos[mSel.foto];
+    $("#modal").innerHTML = `
+      <div class="m-galeria">
+        <button class="cerrar" data-cerrar aria-label="Cerrar">✕</button>
+        ${f ? `<img class="principal" src="${esc(f)}" alt="${esc(p.nombre)}">` : `<div class="ph"><img src="img/logo.png" alt=""></div>`}
+        ${p.fotos.length>1 ? `<div class="miniaturas">${p.fotos.map((x,i)=>`<img src="${esc(x)}" data-foto="${i}" class="${i===mSel.foto?"on":""}" alt="">`).join("")}</div>` : ""}
+      </div>
+      <div class="m-info">
+        <span class="card-cat">${esc(p.cat)}</span>
+        <h2>${esc(p.nombre)}</h2>
+        ${htmlPrecio(p)}
+        ${p.desc ? `<p class="desc">${esc(p.desc)}</p>` : ""}
+        ${p.estado==="preventa" ? `<p class="aviso-txt">📦 Producto en preventa: lo reservás ahora y te avisamos cuando llega.</p>` : ""}
+        ${vendible(p) && p.vars.length ? `<div><div class="lbl">Talle / variante</div><div class="variantes">${p.vars.map(v=>`<button class="var ${v===mSel.var?"on":""}" data-var="${esc(v)}">${esc(v)}</button>`).join("")}</div></div>` : ""}
+        ${vendible(p) ? `<div><div class="lbl">Cantidad</div><div class="cant"><button data-cant="-1">−</button><span>${mSel.cant}</span><button data-cant="1">+</button></div></div>` : ""}
+        <div class="err" id="mErr"></div>
+        ${textoBoton(p).replace('class="btn', 'style="width:100%;padding:.85rem" class="btn')}
+      </div>`;
+  };
+  pintar();
+  $("#modal").onclick = e => {
+    const b = e.target.closest("[data-var],[data-cant],[data-foto],[data-accion],[data-cerrar]"); if (!b) return;
+    if (b.dataset.cerrar !== undefined) return cerrarModal();
+    if (b.dataset.var) { mSel.var = b.dataset.var; return pintar(); }
+    if (b.dataset.foto) { mSel.foto = +b.dataset.foto; return pintar(); }
+    if (b.dataset.cant) { const max = p.stock ?? 99; mSel.cant = Math.min(max, Math.max(1, mSel.cant + +b.dataset.cant)); return pintar(); }
+    const acc = b.dataset.accion;
+    if (acc === "agregar") {
+      if (p.vars.length && !mSel.var) { $("#mErr").textContent = "Elegí un talle / variante."; return; }
+      agregar(p, mSel.var, mSel.cant); cerrarModal();
+    } else consultar(p, acc);
+  };
+  $("#velo").classList.add("on"); $("#modal").classList.add("on");
+}
+function cerrarModal(){ $("#modal").classList.remove("on"); if (!$("#panel").classList.contains("on")) $("#velo").classList.remove("on"); }
+
+/* ════════════════════════════════════════════════
+   Carrito
+════════════════════════════════════════════════ */
+let datosCliente = store.get("jem_cliente", {nombre:"", entrega:"mendoza", direccion:"", notas:"", dni:""});
+const prodPorId = id => PRODUCTOS.find(p => p.id === id);
+function guardar(){ store.set("jem_carrito", carrito); store.set("jem_cliente", datosCliente); actualizarContador(); }
+function actualizarContador(){
+  const n = carrito.reduce((a,i)=>a+i.cant,0);
+  const b = $("#nCarrito"); b.textContent = n; b.classList.toggle("on", n>0);
+}
+function agregar(p, variante, cant){
+  const ex = carrito.find(i => i.id===p.id && i.var===variante);
+  const max = p.stock ?? 99;
+  if (ex) ex.cant = Math.min(max, ex.cant + cant); else carrito.push({id:p.id, var:variante, cant:Math.min(max,cant)});
+  guardar(); toast(`✓ ${p.nombre} agregado`);
+}
+function calcular(){
+  const items = carrito.map(i => ({...i, p: prodPorId(i.id)})).filter(i => i.p && vendible(i.p));
+  const subtotal = items.reduce((a,i)=>a + i.p.precioFinal*i.cant, 0);
+  let descuento = 0, promo = null;
+  const dig = String(datosCliente.dni||"").trim();
+  if (/^\d$/.test(dig)) {
+    const candidatas = PROMOS_DNI_HOY.filter(p => p.digitos.includes(dig));
+    candidatas.forEach(pr => {
+      // No se combina: solo aplica a productos SIN precio promo
+      const d = items.filter(i => !i.p.enOferta && aplicaA(pr, i.p)).reduce((a,i)=>a + i.p.precioFinal*i.cant*pr.pct/100, 0);
+      if (d > descuento) { descuento = d; promo = pr; }
+    });
+  }
+  return {items, subtotal, descuento: Math.round(descuento), promo, total: subtotal - Math.round(descuento)};
+}
+function pintarCarrito(){
+  const c = calcular();
+  if (!c.items.length) {
+    $("#pBody").innerHTML = `<div class="vacio">Tu carrito está vacío.<br><br><button class="btn btn-sec" data-cerrar-panel>Ver productos</button></div>`;
+    $("#pFoot").innerHTML = ""; return;
+  }
+  const hayOferta = c.items.some(i => i.p.enOferta);
+  const dniHtml = PROMOS_DNI_HOY.length ? `
+    <div class="dni-box">
+      <div class="t">🎯 Promo DNI de hoy: terminados en ${[...new Set(PROMOS_DNI_HOY.flatMap(p=>p.digitos))].join(", ")}</div>
+      <label>Último número de tu DNI: <input id="fDni" inputmode="numeric" maxlength="1" value="${esc(datosCliente.dni)}"></label>
+      <small>No se combina con otras ofertas${hayOferta?" (no aplica a los productos que ya están en oferta)":""}. Vas a tener que mostrar tu DNI al recibir el pedido.</small>
+    </div>` : "";
+  $("#pBody").innerHTML = c.items.map(i => `
+    <div class="item" data-id="${i.p.id}" data-var="${esc(i.var??"")}">
+      ${i.p.fotos[0] ? `<img src="${esc(i.p.fotos[0])}" alt="">` : `<div class="mini-ph"></div>`}
+      <div>
+        <div class="nom">${esc(i.p.nombre)}</div>
+        <div class="det">${i.var?`Talle: ${esc(i.var)} · `:""}${plata(i.p.precioFinal)}${i.p.estado==="preventa"?" · Preventa":""}</div>
+        <div class="cant" style="margin-top:.35rem"><button data-mas="-1">−</button><span>${i.cant}</span><button data-mas="1">+</button></div>
+      </div>
+      <div><div class="pr">${plata(i.p.precioFinal*i.cant)}</div><button class="quitar" data-quitar>Quitar</button></div>
+    </div>`).join("") + `
+    <div class="form">
+      ${dniHtml}
+      <div><div class="lbl">Entrega</div>
+        <label class="opc"><input type="radio" name="entrega" value="mendoza" ${datosCliente.entrega!=="pais"?"checked":""}><span><b>Gran Mendoza · GRATIS</b><small>Coordinamos día y lugar por WhatsApp</small></span></label>
+        <label class="opc" style="margin-top:.45rem"><input type="radio" name="entrega" value="pais" ${datosCliente.entrega==="pais"?"checked":""}><span><b>Envío al resto del país</b><small>El costo del envío se coordina por WhatsApp</small></span></label>
+      </div>
+      <input id="fNombre" placeholder="Tu nombre" value="${esc(datosCliente.nombre)}">
+      <input id="fDir" placeholder="${datosCliente.entrega==="pais"?"Ciudad, provincia y código postal":"Localidad / barrio"}" value="${esc(datosCliente.direccion)}">
+      <textarea id="fNotas" rows="2" placeholder="Notas (opcional)">${esc(datosCliente.notas)}</textarea>
+    </div>`;
+  pintarTotales();
+}
+function pintarTotales(){
+  const c = calcular();
+  if (!c.items.length) return;
+  $("#pFoot").innerHTML = `
+    <div class="fila"><span>Subtotal</span><span>${plata(c.subtotal)}</span></div>
+    ${c.descuento ? `<div class="fila desc"><span>Promo DNI ${esc(datosCliente.dni)} (-${c.promo.pct}%)</span><span>-${plata(c.descuento)}</span></div>` : ""}
+    <div class="fila"><span>Envío</span><span>${datosCliente.entrega==="pais"?"A coordinar":"Gratis"}</span></div>
+    <div class="fila tot"><span>Total</span><span>${plata(c.total)}</span></div>
+    <div class="err" id="cErr"></div>
+    <button class="btn btn-wa" id="enviar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.8-.9-2-1-.3-.1-.5-.1-.7.1-.2.3-.8 1-.9 1.2-.2.2-.3.2-.6.1-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6l.4-.5c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5l-.9-2.2c-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.1.2 2.1 3.2 5.1 4.5.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.8-.7 2-1.4.2-.7.2-1.3.2-1.4-.1-.1-.3-.2-.6-.3zM12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2z"/></svg>
+      Enviar pedido por WhatsApp
+    </button>
+    <p class="nota">Te respondemos para confirmar stock, entrega y forma de pago.</p>`;
+}
+function mensajePedido(){
+  const c = calcular();
+  const L = [];
+  L.push("¡Hola Julio! 👋 Quiero hacer este pedido en la *Tienda JEM*:", "");
+  c.items.forEach(i => L.push(`• ${i.cant} x ${i.p.nombre}${i.var?` (talle ${i.var})`:""}${i.p.estado==="preventa"?" [PREVENTA]":""} — ${plata(i.p.precioFinal*i.cant)}`));
+  L.push("", `Subtotal: ${plata(c.subtotal)}`);
+  if (c.descuento) L.push(`Promo DNI terminado en ${datosCliente.dni} (-${c.promo.pct}%): -${plata(c.descuento)}`);
+  L.push(`*Total: ${plata(c.total)}*`, "");
+  L.push(`Entrega: ${datosCliente.entrega==="pais" ? "Envío al resto del país (costo a coordinar)" : "Gran Mendoza (gratis)"}`);
+  L.push(`Nombre: ${datosCliente.nombre}`);
+  if (datosCliente.direccion) L.push(`${datosCliente.entrega==="pais"?"Destino":"Localidad"}: ${datosCliente.direccion}`);
+  if (datosCliente.notas) L.push(`Notas: ${datosCliente.notas}`);
+  return L.join("\n");
+}
+function abrirCarrito(){ pintarCarrito(); $("#panel").classList.add("on"); $("#velo").classList.add("on"); }
+function cerrarCarrito(){ $("#panel").classList.remove("on"); if (!$("#modal").classList.contains("on")) $("#velo").classList.remove("on"); }
+
+/* ════════════════════════════════════════════════
+   Eventos
+════════════════════════════════════════════════ */
+$("#grilla").addEventListener("click", e => {
+  const card = e.target.closest(".card"); if (!card) return;
+  const p = prodPorId(card.dataset.id); if (!p) return;
+  const b = e.target.closest("[data-accion]");
+  if (b && b.dataset.accion === "agregar" && !p.vars.length) { e.stopPropagation(); return agregar(p, null, 1); }
+  if (b && b.dataset.accion !== "agregar") { e.stopPropagation(); return consultar(p, b.dataset.accion); }
+  abrirModal(p);
+});
+$("#cats").addEventListener("click", e => { const b = e.target.closest("[data-cat]"); if (!b) return; catActiva = b.dataset.cat; pintarCats(); pintarGrilla(); });
+$("#buscar").addEventListener("input", pintarGrilla);
+$("#abrirCarrito").onclick = abrirCarrito;
+$("#cerrarCarrito").onclick = cerrarCarrito;
+$("#velo").onclick = () => { cerrarModal(); cerrarCarrito(); };
+document.addEventListener("keydown", e => { if (e.key === "Escape") { cerrarModal(); cerrarCarrito(); } });
+
+$("#panel").addEventListener("click", e => {
+  if (e.target.closest("[data-cerrar-panel]")) return cerrarCarrito();
+  const it = e.target.closest(".item");
+  if (it) {
+    const idx = carrito.findIndex(i => i.id===it.dataset.id && (i.var??"")===it.dataset.var);
+    if (idx < 0) return;
+    const mas = e.target.closest("[data-mas]");
+    if (mas) { const p = prodPorId(carrito[idx].id); carrito[idx].cant = Math.min(p?.stock ?? 99, carrito[idx].cant + +mas.dataset.mas); if (carrito[idx].cant < 1) carrito.splice(idx,1); guardar(); return pintarCarrito(); }
+    if (e.target.closest("[data-quitar]")) { carrito.splice(idx,1); guardar(); return pintarCarrito(); }
+  }
+  if (e.target.closest("#enviar")) {
+    if (!datosCliente.nombre.trim()) { $("#cErr").textContent = "Escribí tu nombre para enviar el pedido."; $("#fNombre")?.focus(); return; }
+    abrirWA(mensajePedido());
+  }
+});
+$("#panel").addEventListener("input", e => {
+  const t = e.target;
+  if (t.id === "fNombre") datosCliente.nombre = t.value;
+  if (t.id === "fDir") datosCliente.direccion = t.value;
+  if (t.id === "fNotas") datosCliente.notas = t.value;
+  if (t.id === "fDni") { t.value = t.value.replace(/\D/g,"").slice(-1); datosCliente.dni = t.value; }
+  guardar(); pintarTotales();
+});
+$("#panel").addEventListener("change", e => {
+  if (e.target.name === "entrega") { datosCliente.entrega = e.target.value; guardar(); pintarCarrito(); }
+});
+
+/* ════════════════════════════════════════════════
+   Inicio
+════════════════════════════════════════════════ */
+async function iniciar(){
+  let prods, avisos, dni;
+  if (modoDemo) {
+    ({productos:prods, avisos, dni} = DEMO);
+    const d = document.createElement("div"); d.className = "demo"; d.textContent = "Modo demo · productos de ejemplo"; document.body.appendChild(d);
+  } else {
+    try {
+      [prods, avisos, dni] = await Promise.all([
+        leerPestana(CONFIG.PESTANA_PRODUCTOS),
+        leerPestana(CONFIG.PESTANA_AVISOS).catch(()=>[]),
+        leerPestana(CONFIG.PESTANA_DNI).catch(()=>[]),
+      ]);
+    } catch (e) {
+      $("#grilla").innerHTML = `<div class="vacio">No pudimos cargar los productos en este momento.<br><br>
+        <button class="btn btn-wa" onclick="abrirWA('¡Hola Julio! Quería consultar por los productos de la tienda.')">Consultanos por WhatsApp</button></div>`;
+      return;
+    }
+  }
+  PRODUCTOS = prods.filter(p => String(p["Nombre"]||"").trim()).map(prepararProducto)
+    .filter(p => p.estado !== "oculto")
+    .sort((a,b) => (b.dest - a.dest) || (a.orden - b.orden) || a.nombre.localeCompare(b.nombre));
+  PROMOS_DNI_HOY = promosDeHoy(dni);
+  // limpiar del carrito lo que ya no existe
+  carrito = carrito.filter(i => prodPorId(i.id)); guardar();
+  mostrarAvisos(avisos);
+  pintarCats(); pintarGrilla();
+}
+iniciar();
+</script>
+</body>
+</html>
