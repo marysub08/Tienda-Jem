@@ -110,6 +110,8 @@ nav{display:flex;justify-content:space-between;align-items:center;gap:1rem;paddi
 .card-err{font-size:.75rem;color:var(--rojo);min-height:0}
 .card-vars.alerta .cvar{border-color:var(--rojo)}
 .var.info{cursor:default;opacity:.6}
+.cvar.sin,.var.sin{text-decoration:line-through;opacity:.35}
+.aviso-stock{font-size:.78rem;color:var(--oferta);margin-top:.35rem;min-height:0}
 .vacio,.cargando{text-align:center;color:var(--texto-2);padding:3rem 1rem;grid-column:1/-1}
 .spinner{width:34px;height:34px;border:3px solid rgba(56,189,248,.2);border-top-color:var(--azul-md);border-radius:50%;margin:0 auto 1rem;animation:gira 1s linear infinite}
 @keyframes gira{to{transform:rotate(360deg)}}
@@ -277,6 +279,8 @@ const CONFIG = {
   // Mientras esté vacío, la tienda muestra productos de ejemplo.
   SHEET_ID: "1IzjbBUXziaBm7nscyRD1jFilgFxiQacFRhcRWrWMzOY",
   WHATSAPP: "5492616814824",
+  // Link de la "App web" de Apps Script que registra los pedidos y descuenta stock (ver instrucciones).
+  PEDIDOS_URL: "",
   PESTANA_PRODUCTOS: "Productos",
   PESTANA_AVISOS: "Avisos",
   PESTANA_DNI: "Promos DNI",
@@ -285,7 +289,7 @@ const CONFIG = {
 /* Datos de ejemplo (solo se usan si SHEET_ID está vacío o con ?demo en la URL) */
 const DEMO = {
   productos: [
-    {Nombre:"Remera JEM 2026",Descripción:"Remera técnica del kit oficial JEM · Julio Espósito MTB.",Categoría:"Indumentaria",Precio:25000,"Precio promo":21000,"Promo hasta":null,Detalle:"Tela: poliéster técnico dry-fit\nCorte: ciclista, ajustado\nTalles: S a XXL\n- 3 bolsillos traseros\n- Cierre completo\n- Detalles reflectivos\nLavar a mano con agua fría, no usar secarropas.",Fotos:"fotos/remera.jpeg",Variantes:"S-M-L-XL-XXL",Stock:12,Estado:"Preventa",Destacado:"SÍ",Orden:1},
+    {Nombre:"Remera JEM 2026",Descripción:"Remera técnica del kit oficial JEM · Julio Espósito MTB.",Categoría:"Indumentaria",Precio:25000,"Precio promo":21000,"Promo hasta":null,Detalle:"Tela: poliéster técnico dry-fit\nCorte: ciclista, ajustado\nTalles: S a XXL\n- 3 bolsillos traseros\n- Cierre completo\n- Detalles reflectivos\nLavar a mano con agua fría, no usar secarropas.",Fotos:"fotos/remera.jpeg",Variantes:"S:2 - M:0 - L:1 - XL:0 - XXL:3",Stock:null,Estado:"Preventa",Destacado:"SÍ",Orden:1},
     {Nombre:"Medias JEM 2026",Descripción:"Medias de ciclismo con logo JEM.",Categoría:"Indumentaria",Precio:8000,"Precio promo":null,Fotos:"",Variantes:"Única",Stock:null,Estado:"Preventa",Destacado:"",Orden:2},
     {Nombre:"Rompevientos JEM 2026",Descripción:"Rompevientos liviano con logo JEM.",Categoría:"Indumentaria",Precio:null,Fotos:"",Variantes:"S-M-L-XL-XXL",Stock:null,Estado:"Próximamente",Destacado:"",Orden:3},
     {Nombre:"Caramañola 750 ml",Descripción:"Producto de ejemplo para ver cómo queda un accesorio.",Categoría:"Accesorios",Precio:6500,Fotos:"",Variantes:"",Stock:0,Estado:"Visible",Destacado:"",Orden:4},
@@ -398,7 +402,15 @@ function prepararProducto(p, i){
   const videos = [...String(p["Video"]||p["Videos"]||"").split(/[,\n]/), ...crudo.filter(esYT)].map(videoInfo).filter(Boolean);
   const fotos = imgs.length ? imgs : videos.map(v=>v.thumb).filter(Boolean);
   const medios = [...videos.map(v=>({...v, video:true})), ...imgs.map(src=>({src, thumb:src}))];
-  const vars = String(p["Variantes"]||"").split(/\s*[-,\/|]\s*/).map(s=>s.trim()).filter(s=>s && norm(s)!=="unica" && norm(s)!=="única").map(v=>v.length<=4 ? v.toUpperCase() : v);
+  const varStock = {};
+  const vars = String(p["Variantes"]||"").split(/\s*[-,\/|]\s*/).map(s=>s.trim()).filter(Boolean).map(tok => {
+    const m = tok.match(/^(.+?)\s*[:=(]\s*(\d+)\s*\)?$/);
+    let nom = (m ? m[1] : tok).trim(); nom = nom.length<=4 ? nom.toUpperCase() : nom;
+    if (m) varStock[nom] = +m[2];
+    return nom;
+  }).filter(v => norm(v)!=="unica");
+  const hayVarStock = Object.keys(varStock).length > 0;
+  const stockTotal = hayVarStock ? Object.values(varStock).reduce((a,b)=>a+b,0) : stock;
   return {
     id: norm(p["Nombre"]).replace(/[^a-z0-9]+/g,"-"),
     nombre: String(p["Nombre"]||"").trim(),
@@ -407,12 +419,14 @@ function prepararProducto(p, i){
     precio, precioFinal: promoOk ? promo : precio, enOferta: !!promoOk, hasta: promoOk ? hasta : null,
     pct: promoOk ? Math.round((1 - promo/precio)*100) : 0,
     detalle: String(p["Detalle"] ?? p["Detalles"] ?? p["Ficha técnica"] ?? p["Ficha tecnica"] ?? "").trim(),
-    fotos, medios, videos, vars, stock,
+    fotos, medios, videos, vars, varStock, hayVarStock, stock: stockTotal,
     estado: estado.startsWith("oculto") ? "oculto" : estado.startsWith("pre") ? "preventa" : estado.startsWith("prox") ? "proximamente" : "visible",
     dest: si(p["Destacado"]), orden: num(p["Orden"]) ?? 999,
   };
 }
-const agotado = p => p.stock !== null && p.stock <= 0 && p.estado !== "preventa";
+const agotado = p => p.stock !== null && p.stock <= 0 && p.estado !== "proximamente";
+const stockDe = (p, v) => (p.hayVarStock && v != null) ? (p.varStock[v] ?? 0) : (p.stock ?? 99);
+const sinStockVar = (p, v) => p.hayVarStock && (p.varStock[v] ?? 0) <= 0;
 const vendible = p => p.estado !== "proximamente" && !agotado(p) && p.precioFinal;
 
 function promosDeHoy(filas){
@@ -496,7 +510,8 @@ function pintarGrilla(){
         <span class="card-cat">${esc(p.cat)}</span>
         <h3 class="card-nom">${esc(p.nombre)}</h3>
         ${htmlPrecio(p)}
-        ${p.vars.length ? `<div class="card-vars">${p.vars.map(v=>`<button class="cvar ${vendible(p)?"":"info"} ${cardSel[p.id]===v?"on":""}" ${vendible(p)?`data-cvar="${esc(v)}"`:"disabled"}>${esc(v)}</button>`).join("")}</div><div class="card-err"></div>` : ""}
+        ${p.vars.length ? `<div class="card-vars">${p.vars.map(v=>{ const ok = vendible(p) && !sinStockVar(p,v);
+            return `<button class="cvar ${ok?"":"info"} ${sinStockVar(p,v)?"sin":""} ${cardSel[p.id]===v&&ok?"on":""}" ${ok?`data-cvar="${esc(v)}"`:"disabled"} title="${sinStockVar(p,v)?"Sin stock":""}">${esc(v)}</button>`; }).join("")}</div><div class="card-err"></div>` : ""}
         ${textoBoton(p)}
       </div>
     </article>`).join("") : `<div class="vacio">No encontramos productos${q?" con esa búsqueda":""}. 🚵</div>`;
@@ -519,7 +534,7 @@ function consultar(p, tipo){
 let mSel = {var:null, cant:1, foto:0};
 const cardSel = {};
 function abrirModal(p){
-  mSel = {var: cardSel[p.id] || (p.vars.length===1 ? p.vars[0] : null), cant:1, foto:0};
+  mSel = {var: cardSel[p.id] || (p.vars.length===1 && !sinStockVar(p,p.vars[0]) ? p.vars[0] : null), cant:1, foto:0};
   const pintar = () => {
     const f = p.medios[mSel.foto];
     const principal = !f ? `<div class="ph"><img src="img/logo.png" alt=""></div>`
@@ -540,7 +555,7 @@ function abrirModal(p){
         ${htmlPrecio(p)}
         ${p.desc ? `<p class="desc">${esc(p.desc)}</p>` : ""}
         ${p.estado==="preventa" ? `<p class="aviso-txt">📦 Producto en preventa: lo reservás ahora y te avisamos cuando llega.</p>` : ""}
-        ${vendible(p) && p.vars.length ? `<div><div class="lbl">Talle / variante</div><div class="variantes">${p.vars.map(v=>`<button class="var ${v===mSel.var?"on":""}" data-var="${esc(v)}">${esc(v)}</button>`).join("")}</div></div>` : ""}
+        ${vendible(p) && p.vars.length ? `<div><div class="lbl">Talle / variante</div><div class="variantes">${p.vars.map(v=> sinStockVar(p,v) ? `<span class="var info sin" title="Sin stock">${esc(v)}</span>` : `<button class="var ${v===mSel.var?"on":""}" data-var="${esc(v)}">${esc(v)}</button>`).join("")}</div>${p.hayVarStock && mSel.var ? `<div class="aviso-stock">${stockDe(p,mSel.var)<=3 ? `¡Quedan ${stockDe(p,mSel.var)}!` : ""}</div>` : ""}</div>` : ""}
         ${!vendible(p) && p.vars.length ? `<div><div class="lbl">Talles / opciones</div><div class="variantes">${p.vars.map(v=>`<span class="var info">${esc(v)}</span>`).join("")}</div></div>` : ""}
         ${vendible(p) ? `<div><div class="lbl">Cantidad</div><div class="cant"><button data-cant="-1">−</button><span>${mSel.cant}</span><button data-cant="1">+</button></div></div>` : ""}
         <div class="err" id="mErr"></div>
@@ -552,9 +567,9 @@ function abrirModal(p){
   $("#modal").onclick = e => {
     const b = e.target.closest("[data-var],[data-cant],[data-foto],[data-accion],[data-cerrar]"); if (!b) return;
     if (b.dataset.cerrar !== undefined) return cerrarModal();
-    if (b.dataset.var) { mSel.var = b.dataset.var; cardSel[p.id] = mSel.var; return pintar(); }
+    if (b.dataset.var) { mSel.var = b.dataset.var; cardSel[p.id] = mSel.var; mSel.cant = Math.min(mSel.cant, stockDe(p,mSel.var)); return pintar(); }
     if (b.dataset.foto) { mSel.foto = +b.dataset.foto; return pintar(); }
-    if (b.dataset.cant) { const max = p.stock ?? 99; mSel.cant = Math.min(max, Math.max(1, mSel.cant + +b.dataset.cant)); return pintar(); }
+    if (b.dataset.cant) { const max = stockDe(p, mSel.var); mSel.cant = Math.min(max, Math.max(1, mSel.cant + +b.dataset.cant)); return pintar(); }
     const acc = b.dataset.accion;
     if (acc === "agregar") {
       if (p.vars.length && !mSel.var) { $("#mErr").textContent = "Elegí un talle / variante."; return; }
@@ -577,7 +592,9 @@ function actualizarContador(){
 }
 function agregar(p, variante, cant){
   const ex = carrito.find(i => i.id===p.id && i.var===variante);
-  const max = p.stock ?? 99;
+  const max = stockDe(p, variante);
+  const ya = ex ? ex.cant : 0;
+  if (ya >= max) { toast(`No hay más stock${variante?` en talle ${variante}`:""}`); return; }
   if (ex) ex.cant = Math.min(max, ex.cant + cant); else carrito.push({id:p.id, var:variante, cant:Math.min(max,cant)});
   guardar(); toast(`✓ ${p.nombre} agregado`);
 }
@@ -646,10 +663,22 @@ function pintarTotales(){
     </button>
     <p class="nota">Te respondemos para confirmar stock, entrega y forma de pago.</p>`;
 }
+let pedidoActual = "";
+function registrarPedido(){
+  if (!CONFIG.PEDIDOS_URL) return;
+  const c = calcular();
+  const datos = {
+    pedido: pedidoActual, cliente: datosCliente.nombre, entrega: datosCliente.entrega==="pais" ? "Resto del país" : "Gran Mendoza",
+    destino: datosCliente.direccion, notas: datosCliente.notas, total: c.total,
+    dni: c.descuento ? datosCliente.dni : "",
+    items: c.items.map(i => ({producto: i.p.nombre, variante: i.var || "", cant: i.cant, precio: i.p.precioFinal})),
+  };
+  try { fetch(CONFIG.PEDIDOS_URL, {method:"POST", mode:"no-cors", keepalive:true, headers:{"Content-Type":"text/plain;charset=utf-8"}, body: JSON.stringify(datos)}); } catch(e) {}
+}
 function mensajePedido(){
   const c = calcular();
   const L = [];
-  L.push("¡Hola Julio! 👋 Quiero hacer este pedido en la *Tienda JEM*:", "");
+  L.push(`¡Hola Julio! 👋 Quiero hacer este pedido en la *Tienda JEM* (pedido *${pedidoActual}*):`, "");
   c.items.forEach(i => L.push(`• ${i.cant} x ${i.p.nombre}${i.var?` (talle ${i.var})`:""}${i.p.estado==="preventa"?" [PREVENTA]":""} — ${plata(i.p.precioFinal*i.cant)}`));
   L.push("", `Subtotal: ${plata(c.subtotal)}`);
   if (c.descuento) L.push(`Promo DNI terminado en ${datosCliente.dni} (-${c.promo.pct}%): -${plata(c.descuento)}`);
@@ -701,11 +730,13 @@ $("#panel").addEventListener("click", e => {
     const idx = carrito.findIndex(i => i.id===it.dataset.id && (i.var??"")===it.dataset.var);
     if (idx < 0) return;
     const mas = e.target.closest("[data-mas]");
-    if (mas) { const p = prodPorId(carrito[idx].id); carrito[idx].cant = Math.min(p?.stock ?? 99, carrito[idx].cant + +mas.dataset.mas); if (carrito[idx].cant < 1) carrito.splice(idx,1); guardar(); return pintarCarrito(); }
+    if (mas) { const p = prodPorId(carrito[idx].id); carrito[idx].cant = Math.min(p ? stockDe(p, carrito[idx].var) : 99, carrito[idx].cant + +mas.dataset.mas); if (carrito[idx].cant < 1) carrito.splice(idx,1); guardar(); return pintarCarrito(); }
     if (e.target.closest("[data-quitar]")) { carrito.splice(idx,1); guardar(); return pintarCarrito(); }
   }
   if (e.target.closest("#enviar")) {
     if (!datosCliente.nombre.trim()) { $("#cErr").textContent = "Escribí tu nombre para enviar el pedido."; $("#fNombre")?.focus(); return; }
+    pedidoActual = "JEM-" + Date.now().toString(36).slice(-5).toUpperCase();
+    registrarPedido();
     abrirWA(mensajePedido());
   }
 });
