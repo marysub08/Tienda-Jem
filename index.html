@@ -647,6 +647,7 @@ function pintarCarrito(){
         <label class="opc" style="margin-top:.45rem"><input type="radio" name="entrega" value="pais" ${datosCliente.entrega==="pais"?"checked":""}><span><b>Envío al resto del país</b><small>El costo del envío se coordina por WhatsApp</small></span></label>
       </div>
       <input id="fNombre" placeholder="Tu nombre" value="${esc(datosCliente.nombre)}">
+      <input id="fDom" placeholder="Domicilio de entrega (calle, número, piso/depto)" value="${esc(datosCliente.domicilio||"")}">
       <input id="fDir" placeholder="${datosCliente.entrega==="pais"?"Ciudad, provincia y código postal":"Localidad / barrio"}" value="${esc(datosCliente.direccion)}">
       <textarea id="fNotas" rows="2" placeholder="Notas (opcional)">${esc(datosCliente.notas)}</textarea>
     </div>`;
@@ -673,22 +674,27 @@ function registrarPedido(){
   const c = calcular();
   const datos = {
     pedido: pedidoActual, cliente: datosCliente.nombre, entrega: datosCliente.entrega==="pais" ? "Resto del país" : "Gran Mendoza",
-    destino: datosCliente.direccion, notas: datosCliente.notas, total: c.total,
+    destino: [datosCliente.domicilio, datosCliente.direccion].filter(Boolean).join(", "), notas: datosCliente.notas, total: c.total,
     dni: c.descuento ? datosCliente.dni : "",
     items: c.items.map(i => ({producto: i.p.nombre, variante: i.var || "", cant: i.cant, precio: i.p.precioFinal})),
   };
-  try { fetch(CONFIG.PEDIDOS_URL, {method:"POST", mode:"no-cors", keepalive:true, headers:{"Content-Type":"text/plain;charset=utf-8"}, body: JSON.stringify(datos)}); } catch(e) {}
+  const json = JSON.stringify(datos);
+  // 1) por GET (imagen invisible): el método más compatible con todos los navegadores
+  try { const img = new Image(); img.src = CONFIG.PEDIDOS_URL + "?data=" + encodeURIComponent(json) + "&t=" + Date.now(); window.__pedidoImg = img; } catch(e) {}
+  // 2) por POST (respaldo). La planilla ignora el duplicado.
+  try { if (navigator.sendBeacon) navigator.sendBeacon(CONFIG.PEDIDOS_URL, new Blob([json], {type:"text/plain;charset=utf-8"})); } catch(e) {}
 }
 function mensajePedido(){
   const c = calcular();
   const L = [];
-  L.push(`¡Hola Julio! 👋 Quiero hacer este pedido en la *Tienda JEM* (pedido *${pedidoActual}*):`, "");
+  L.push(`¡Hola Julio! Quiero hacer este pedido en la *Tienda JEM* (pedido *${pedidoActual}*):`, "");
   c.items.forEach(i => L.push(`• ${i.cant} x ${i.p.nombre}${i.var?` (talle ${i.var})`:""}${i.p.estado==="preventa"?" [PREVENTA]":""} — ${plata(i.p.precioFinal*i.cant)}`));
   L.push("", `Subtotal: ${plata(c.subtotal)}`);
   if (c.descuento) L.push(`Promo DNI terminado en ${datosCliente.dni} (-${c.promo.pct}%): -${plata(c.descuento)}`);
   L.push(`*Total: ${plata(c.total)}*`, "");
   L.push(`Entrega: ${datosCliente.entrega==="pais" ? "Envío al resto del país (costo a coordinar)" : "Gran Mendoza (gratis)"}`);
   L.push(`Nombre: ${datosCliente.nombre}`);
+  if (datosCliente.domicilio) L.push(`Domicilio: ${datosCliente.domicilio}`);
   if (datosCliente.direccion) L.push(`${datosCliente.entrega==="pais"?"Destino":"Localidad"}: ${datosCliente.direccion}`);
   if (datosCliente.notas) L.push(`Notas: ${datosCliente.notas}`);
   return L.join("\n");
@@ -739,6 +745,7 @@ $("#panel").addEventListener("click", e => {
   }
   if (e.target.closest("#enviar")) {
     if (!datosCliente.nombre.trim()) { $("#cErr").textContent = "Escribí tu nombre para enviar el pedido."; $("#fNombre")?.focus(); return; }
+    if (!(datosCliente.domicilio||"").trim()) { $("#cErr").textContent = "Escribí el domicilio de entrega."; $("#fDom")?.focus(); return; }
     pedidoActual = "JEM-" + Date.now().toString(36).slice(-5).toUpperCase();
     registrarPedido();
     abrirWA(mensajePedido());
@@ -748,6 +755,7 @@ $("#panel").addEventListener("input", e => {
   const t = e.target;
   if (t.id === "fNombre") datosCliente.nombre = t.value;
   if (t.id === "fDir") datosCliente.direccion = t.value;
+  if (t.id === "fDom") datosCliente.domicilio = t.value;
   if (t.id === "fNotas") datosCliente.notas = t.value;
   if (t.id === "fDni") { t.value = t.value.replace(/\D/g,"").slice(-1); datosCliente.dni = t.value; }
   guardar(); pintarTotales();
