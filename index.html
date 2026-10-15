@@ -112,7 +112,8 @@ nav{display:flex;justify-content:space-between;align-items:center;gap:1rem;paddi
 .modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(860px,94vw);max-height:90vh;overflow:auto;background:var(--fondo-2);
   border:1px solid var(--card-brd);border-radius:18px;z-index:310;display:none}
 .modal.on{display:grid;grid-template-columns:1.05fr 1fr}
-.m-galeria{background:var(--fondo);position:relative}
+.m-galeria{background:var(--fondo);position:relative;align-self:start}
+@media (min-width:721px){.m-galeria{position:sticky;top:0}}
 .m-galeria .principal{aspect-ratio:1/1;width:100%;object-fit:cover}
 .m-galeria .ph{aspect-ratio:1/1;display:flex;align-items:center;justify-content:center}
 .m-galeria .ph img{width:60%;opacity:.35;mix-blend-mode:lighten}
@@ -126,6 +127,15 @@ nav{display:flex;justify-content:space-between;align-items:center;gap:1rem;paddi
 .m-info{padding:1.6rem 1.5rem;display:flex;flex-direction:column;gap:.8rem}
 .m-info h2{font-size:1.45rem;font-weight:900;line-height:1.2}
 .m-info .desc{color:var(--celeste-lt);font-size:.95rem;line-height:1.55;white-space:pre-line}
+.detalle{border-top:1px solid var(--card-brd);padding-top:.9rem;display:flex;flex-direction:column;gap:.6rem}
+.detalle p{color:var(--celeste-lt);font-size:.9rem;line-height:1.55}
+.detalle ul{padding-left:1.1rem;display:flex;flex-direction:column;gap:.3rem}
+.detalle li{color:var(--celeste-lt);font-size:.9rem;line-height:1.45}
+.detalle li::marker{color:var(--azul-md)}
+.ficha{width:100%;border-collapse:collapse;font-size:.86rem}
+.ficha td{padding:.45rem .6rem;border-bottom:1px solid rgba(56,189,248,.12);vertical-align:top}
+.ficha td:first-child{color:var(--texto-3);font-weight:700;width:42%}
+.ficha tr:nth-child(odd) td{background:rgba(14,165,233,.05)}
 .lbl{font-size:.78rem;font-weight:800;color:var(--texto-3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:.35rem}
 .variantes{display:flex;flex-wrap:wrap;gap:.4rem}
 .var{min-width:44px;padding:.45rem .8rem;border-radius:8px;border:1px solid var(--card-brd);background:transparent;color:var(--texto);font-weight:700;font-size:.88rem}
@@ -267,7 +277,7 @@ const CONFIG = {
 /* Datos de ejemplo (solo se usan si SHEET_ID está vacío o con ?demo en la URL) */
 const DEMO = {
   productos: [
-    {Nombre:"Remera JEM 2026",Descripción:"Remera técnica del kit oficial JEM · Julio Espósito MTB.",Categoría:"Indumentaria",Precio:25000,"Precio promo":21000,"Promo hasta":null,Fotos:"fotos/remera.jpeg",Variantes:"S-M-L-XL-XXL",Stock:12,Estado:"Preventa",Destacado:"SÍ",Orden:1},
+    {Nombre:"Remera JEM 2026",Descripción:"Remera técnica del kit oficial JEM · Julio Espósito MTB.",Categoría:"Indumentaria",Precio:25000,"Precio promo":21000,"Promo hasta":null,Detalle:"Tela: poliéster técnico dry-fit\nCorte: ciclista, ajustado\nTalles: S a XXL\n- 3 bolsillos traseros\n- Cierre completo\n- Detalles reflectivos\nLavar a mano con agua fría, no usar secarropas.",Fotos:"fotos/remera.jpeg",Variantes:"S-M-L-XL-XXL",Stock:12,Estado:"Preventa",Destacado:"SÍ",Orden:1},
     {Nombre:"Medias JEM 2026",Descripción:"Medias de ciclismo con logo JEM.",Categoría:"Indumentaria",Precio:8000,"Precio promo":null,Fotos:"",Variantes:"Única",Stock:null,Estado:"Preventa",Destacado:"",Orden:2},
     {Nombre:"Rompevientos JEM 2026",Descripción:"Rompevientos liviano con logo JEM.",Categoría:"Indumentaria",Precio:null,Fotos:"",Variantes:"S-M-L-XL-XXL",Stock:null,Estado:"Próximamente",Destacado:"",Orden:3},
     {Nombre:"Caramañola 750 ml",Descripción:"Producto de ejemplo para ver cómo queda un accesorio.",Categoría:"Accesorios",Precio:6500,Fotos:"",Variantes:"",Stock:0,Estado:"Visible",Destacado:"",Orden:4},
@@ -310,6 +320,24 @@ function videoInfo(v){
   if (m && /google\./.test(v)) return {tipo:"drive", embed:`https://drive.google.com/file/d/${m[1]}/preview`, thumb:`https://lh3.googleusercontent.com/d/${m[1]}=w1000`};
   if (/\.(mp4|webm|mov)(\?|$)/i.test(v)) return {tipo:"mp4", src:v, thumb:null};
   return null;
+}
+function htmlDetalle(txt){
+  const lineas = String(txt||"").split(/\r?\n|\s\|\s/).map(l=>l.trim()).filter(Boolean);
+  if (!lineas.length) return "";
+  let h = "", ul = [], tabla = [];
+  const cerrar = () => {
+    if (ul.length) { h += `<ul>${ul.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`; ul = []; }
+    if (tabla.length) { h += `<table class="ficha">${tabla.map(([k,v])=>`<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join("")}</table>`; tabla = []; }
+  };
+  lineas.forEach(l => {
+    const b = l.match(/^[-•*·]\s*(.+)/);
+    const kv = !b && l.match(/^([^:]{1,30}):\s*(.+)$/);
+    if (b) { if (tabla.length) cerrar(); ul.push(b[1]); }
+    else if (kv && !/https?$/i.test(kv[1])) { if (ul.length) cerrar(); tabla.push([kv[1], kv[2]]); }
+    else { cerrar(); h += `<p>${esc(l)}</p>`; }
+  });
+  cerrar();
+  return `<div class="detalle"><div class="lbl">Detalles del producto</div>${h}</div>`;
 }
 function toast(t){ const el=$("#toast"); el.textContent=t; el.classList.add("on"); clearTimeout(toast._t); toast._t=setTimeout(()=>el.classList.remove("on"),2000); }
 const store = { get(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } },
@@ -370,6 +398,7 @@ function prepararProducto(p, i){
     cat: String(p["Categoría"]||p["Categoria"]||"Otros").trim() || "Otros",
     precio, precioFinal: promoOk ? promo : precio, enOferta: !!promoOk, hasta: promoOk ? hasta : null,
     pct: promoOk ? Math.round((1 - promo/precio)*100) : 0,
+    detalle: String(p["Detalle"] ?? p["Detalles"] ?? p["Ficha técnica"] ?? p["Ficha tecnica"] ?? "").trim(),
     fotos, medios, videos, vars, stock,
     estado: estado.startsWith("oculto") ? "oculto" : estado.startsWith("pre") ? "preventa" : estado.startsWith("prox") ? "proximamente" : "visible",
     dest: si(p["Destacado"]), orden: num(p["Orden"]) ?? 999,
@@ -505,6 +534,7 @@ function abrirModal(p){
         ${vendible(p) ? `<div><div class="lbl">Cantidad</div><div class="cant"><button data-cant="-1">−</button><span>${mSel.cant}</span><button data-cant="1">+</button></div></div>` : ""}
         <div class="err" id="mErr"></div>
         ${textoBoton(p).replace('class="btn', 'style="width:100%;padding:.85rem" class="btn')}
+        ${htmlDetalle(p.detalle)}
       </div>`;
   };
   pintar();
