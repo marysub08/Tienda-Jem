@@ -102,6 +102,14 @@ nav{display:flex;justify-content:space-between;align-items:center;gap:1rem;paddi
 .btn-sec{background:transparent;border:1px solid var(--card-brd);color:var(--celeste)}
 .btn:disabled{opacity:.4;cursor:not-allowed}
 .card .btn{margin-top:.6rem;width:100%}
+.card-vars{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.45rem}
+.cvar{min-width:34px;padding:.28rem .5rem;border-radius:7px;border:1px solid var(--card-brd);background:transparent;color:var(--texto);font-weight:700;font-size:.78rem}
+.cvar:hover{border-color:var(--azul-md)}
+.cvar.on{background:var(--azul);border-color:var(--azul);color:#fff}
+.cvar.info{cursor:default;opacity:.6}
+.card-err{font-size:.75rem;color:var(--rojo);min-height:0}
+.card-vars.alerta .cvar{border-color:var(--rojo)}
+.var.info{cursor:default;opacity:.6}
 .vacio,.cargando{text-align:center;color:var(--texto-2);padding:3rem 1rem;grid-column:1/-1}
 .spinner{width:34px;height:34px;border:3px solid rgba(56,189,248,.2);border-top-color:var(--azul-md);border-radius:50%;margin:0 auto 1rem;animation:gira 1s linear infinite}
 @keyframes gira{to{transform:rotate(360deg)}}
@@ -114,7 +122,7 @@ nav{display:flex;justify-content:space-between;align-items:center;gap:1rem;paddi
 .modal.on{display:grid;grid-template-columns:1.05fr 1fr}
 .m-galeria{background:var(--fondo);position:relative;align-self:start}
 @media (min-width:721px){.m-galeria{position:sticky;top:0}}
-.m-galeria .principal{aspect-ratio:1/1;width:100%;object-fit:cover}
+.m-galeria .principal{aspect-ratio:1/1;width:100%;object-fit:contain;background:#010812}
 .m-galeria .ph{aspect-ratio:1/1;display:flex;align-items:center;justify-content:center}
 .m-galeria .ph img{width:60%;opacity:.35;mix-blend-mode:lighten}
 .miniaturas{display:flex;gap:.4rem;padding:.5rem;overflow-x:auto}
@@ -390,7 +398,7 @@ function prepararProducto(p, i){
   const videos = [...String(p["Video"]||p["Videos"]||"").split(/[,\n]/), ...crudo.filter(esYT)].map(videoInfo).filter(Boolean);
   const fotos = imgs.length ? imgs : videos.map(v=>v.thumb).filter(Boolean);
   const medios = [...videos.map(v=>({...v, video:true})), ...imgs.map(src=>({src, thumb:src}))];
-  const vars = String(p["Variantes"]||"").split(/\s*[-,\/|]\s*/).map(s=>s.trim()).filter(s=>s && norm(s)!=="unica" && norm(s)!=="única");
+  const vars = String(p["Variantes"]||"").split(/\s*[-,\/|]\s*/).map(s=>s.trim()).filter(s=>s && norm(s)!=="unica" && norm(s)!=="única").map(v=>v.length<=4 ? v.toUpperCase() : v);
   return {
     id: norm(p["Nombre"]).replace(/[^a-z0-9]+/g,"-"),
     nombre: String(p["Nombre"]||"").trim(),
@@ -488,6 +496,7 @@ function pintarGrilla(){
         <span class="card-cat">${esc(p.cat)}</span>
         <h3 class="card-nom">${esc(p.nombre)}</h3>
         ${htmlPrecio(p)}
+        ${p.vars.length ? `<div class="card-vars">${p.vars.map(v=>`<button class="cvar ${vendible(p)?"":"info"} ${cardSel[p.id]===v?"on":""}" ${vendible(p)?`data-cvar="${esc(v)}"`:"disabled"}>${esc(v)}</button>`).join("")}</div><div class="card-err"></div>` : ""}
         ${textoBoton(p)}
       </div>
     </article>`).join("") : `<div class="vacio">No encontramos productos${q?" con esa búsqueda":""}. 🚵</div>`;
@@ -508,14 +517,15 @@ function consultar(p, tipo){
    Modal de producto
 ════════════════════════════════════════════════ */
 let mSel = {var:null, cant:1, foto:0};
+const cardSel = {};
 function abrirModal(p){
-  mSel = {var: p.vars.length===1 ? p.vars[0] : null, cant:1, foto:0};
+  mSel = {var: cardSel[p.id] || (p.vars.length===1 ? p.vars[0] : null), cant:1, foto:0};
   const pintar = () => {
     const f = p.medios[mSel.foto];
     const principal = !f ? `<div class="ph"><img src="img/logo.png" alt=""></div>`
       : f.video ? (f.tipo==="mp4" ? `<video class="video" src="${esc(f.src)}" controls playsinline autoplay muted loop></video>`
                  : `<iframe class="video" src="${esc(f.embed)}" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>`)
-      : `<img class="principal" src="${esc(f.src)}" alt="${esc(p.nombre)}">`;
+      : `<a href="${esc(f.src)}" target="_blank" rel="noopener" title="Ver imagen completa"><img class="principal" src="${esc(f.src)}" alt="${esc(p.nombre)}" style="cursor:zoom-in"></a>`;
     $("#modal").innerHTML = `
       <div class="m-galeria">
         <button class="cerrar" data-cerrar aria-label="Cerrar">✕</button>
@@ -531,6 +541,7 @@ function abrirModal(p){
         ${p.desc ? `<p class="desc">${esc(p.desc)}</p>` : ""}
         ${p.estado==="preventa" ? `<p class="aviso-txt">📦 Producto en preventa: lo reservás ahora y te avisamos cuando llega.</p>` : ""}
         ${vendible(p) && p.vars.length ? `<div><div class="lbl">Talle / variante</div><div class="variantes">${p.vars.map(v=>`<button class="var ${v===mSel.var?"on":""}" data-var="${esc(v)}">${esc(v)}</button>`).join("")}</div></div>` : ""}
+        ${!vendible(p) && p.vars.length ? `<div><div class="lbl">Talles / opciones</div><div class="variantes">${p.vars.map(v=>`<span class="var info">${esc(v)}</span>`).join("")}</div></div>` : ""}
         ${vendible(p) ? `<div><div class="lbl">Cantidad</div><div class="cant"><button data-cant="-1">−</button><span>${mSel.cant}</span><button data-cant="1">+</button></div></div>` : ""}
         <div class="err" id="mErr"></div>
         ${textoBoton(p).replace('class="btn', 'style="width:100%;padding:.85rem" class="btn')}
@@ -541,7 +552,7 @@ function abrirModal(p){
   $("#modal").onclick = e => {
     const b = e.target.closest("[data-var],[data-cant],[data-foto],[data-accion],[data-cerrar]"); if (!b) return;
     if (b.dataset.cerrar !== undefined) return cerrarModal();
-    if (b.dataset.var) { mSel.var = b.dataset.var; return pintar(); }
+    if (b.dataset.var) { mSel.var = b.dataset.var; cardSel[p.id] = mSel.var; return pintar(); }
     if (b.dataset.foto) { mSel.foto = +b.dataset.foto; return pintar(); }
     if (b.dataset.cant) { const max = p.stock ?? 99; mSel.cant = Math.min(max, Math.max(1, mSel.cant + +b.dataset.cant)); return pintar(); }
     const acc = b.dataset.accion;
@@ -658,7 +669,20 @@ function cerrarCarrito(){ $("#panel").classList.remove("on"); if (!$("#modal").c
 $("#grilla").addEventListener("click", e => {
   const card = e.target.closest(".card"); if (!card) return;
   const p = prodPorId(card.dataset.id); if (!p) return;
+  const cv = e.target.closest("[data-cvar]");
+  if (cv) {
+    cardSel[p.id] = cv.dataset.cvar;
+    card.querySelectorAll(".cvar").forEach(x => x.classList.toggle("on", x === cv));
+    card.querySelector(".card-vars").classList.remove("alerta"); card.querySelector(".card-err").textContent = "";
+    return;
+  }
+  if (e.target.closest(".cvar")) return;
   const b = e.target.closest("[data-accion]");
+  if (b && b.dataset.accion === "agregar" && p.vars.length) {
+    if (cardSel[p.id]) return agregar(p, cardSel[p.id], 1);
+    card.querySelector(".card-vars").classList.add("alerta"); card.querySelector(".card-err").textContent = "Elegí un talle / opción";
+    return;
+  }
   if (b && b.dataset.accion === "agregar" && !p.vars.length) { e.stopPropagation(); return agregar(p, null, 1); }
   if (b && b.dataset.accion !== "agregar") { e.stopPropagation(); return consultar(p, b.dataset.accion); }
   abrirModal(p);
