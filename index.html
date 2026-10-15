@@ -78,6 +78,10 @@ nav{display:flex;justify-content:space-between;align-items:center;gap:1rem;paddi
 .card:hover{transform:translateY(-3px);border-color:var(--azul-md);box-shadow:0 10px 30px rgba(14,165,233,.15)}
 .card-img{position:relative;aspect-ratio:1/1;background:var(--fondo-2);overflow:hidden}
 .card-img img{width:100%;height:100%;object-fit:cover}
+.card-img.agotado > img,.card-img.agotado > .ph{filter:grayscale(1) brightness(.55)}
+.banda-agotado{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;overflow:hidden;z-index:2}
+.banda-agotado span{width:150%;text-align:center;transform:rotate(-30deg);background:#dc2626;color:#fff;font-weight:900;letter-spacing:4px;
+  font-size:clamp(1rem,3.4vw,1.45rem);padding:.45rem 0;box-shadow:0 4px 18px rgba(0,0,0,.45);border-top:2px solid #fca5a5;border-bottom:2px solid #fca5a5}
 .card-img .ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
 .card-img .ph img{width:62%;height:auto;object-fit:contain;opacity:.35;mix-blend-mode:lighten}
 .tags{position:absolute;top:.6rem;left:.6rem;display:flex;flex-direction:column;gap:.3rem;align-items:flex-start}
@@ -280,7 +284,7 @@ const CONFIG = {
   SHEET_ID: "1IzjbBUXziaBm7nscyRD1jFilgFxiQacFRhcRWrWMzOY",
   WHATSAPP: "5492616814824",
   // Link de la "App web" de Apps Script que registra los pedidos y descuenta stock (ver instrucciones).
-  PEDIDOS_URL: "",
+  PEDIDOS_URL: "https://script.google.com/macros/s/AKfycby8R160mI5Z2cBqC5pKIPpai34unfuNKmk2ZjQW7Q1kcbHVMvJpsaQf5v3N-TNnjBb8Ig/exec",
   PESTANA_PRODUCTOS: "Productos",
   PESTANA_AVISOS: "Avisos",
   PESTANA_DNI: "Promos DNI",
@@ -482,7 +486,6 @@ function htmlTags(p){
   if (p.enOferta) t += `<span class="tag off">-${p.pct}%</span>`;
   if (p.estado === "preventa") t += `<span class="tag pre">Preventa</span>`;
   if (p.estado === "proximamente") t += `<span class="tag prox">Próximamente</span>`;
-  if (agotado(p)) t += `<span class="tag agot">Agotado</span>`;
   return `<div class="tags">${t}</div>`;
 }
 const imgOPh = (src, alt) => src
@@ -505,7 +508,7 @@ function pintarGrilla(){
   const lista = PRODUCTOS.filter(p => (catActiva==="Todo" || p.cat===catActiva) && (!q || norm(p.nombre+" "+p.desc+" "+p.cat).includes(q)));
   $("#grilla").innerHTML = lista.length ? lista.map(p => `
     <article class="card" data-id="${p.id}">
-      <div class="card-img">${imgOPh(p.fotos[0], p.nombre)}${htmlTags(p)}${p.videos.length?`<span class="tag-video">▶ Video</span>`:""}</div>
+      <div class="card-img ${agotado(p)?"agotado":""}">${imgOPh(p.fotos[0], p.nombre)}${agotado(p)?`<div class="banda-agotado"><span>AGOTADO</span></div>`:""}${htmlTags(p)}${p.videos.length?`<span class="tag-video">▶ Video</span>`:""}</div>
       <div class="card-body">
         <span class="card-cat">${esc(p.cat)}</span>
         <h3 class="card-nom">${esc(p.nombre)}</h3>
@@ -543,6 +546,7 @@ function abrirModal(p){
       : `<a href="${esc(f.src)}" target="_blank" rel="noopener" title="Ver imagen completa"><img class="principal" src="${esc(f.src)}" alt="${esc(p.nombre)}" style="cursor:zoom-in"></a>`;
     $("#modal").innerHTML = `
       <div class="m-galeria">
+        ${agotado(p)?`<div class="banda-agotado" style="bottom:auto;height:min(440px,100vw)"><span>AGOTADO</span></div>`:""}
         <button class="cerrar" data-cerrar aria-label="Cerrar">✕</button>
         ${principal}
         ${p.medios.length>1 ? `<div class="miniaturas">${p.medios.map((x,i)=>{
